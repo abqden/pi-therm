@@ -24,6 +24,12 @@ operating_mode='auto'
 global quarterly
 quarterly='no'
 
+global mudroom, left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp,  \
+Lower_left_state, Lower_mid_state, Lower_right_state
+
+mudroom = left_actual = mid_actual = right_actual = left_temp = mid_temp = right_temp = \
+Lower_left_state = Lower_mid_state = Lower_right_state = 0
+
 global left_slot_state
 left_slot_state="Open"
 global mid_slot_state
@@ -85,6 +91,7 @@ device_file = device_folder + '/w1_slave'
 # Define some functions
 # -----------------------
 
+
 def read_temp_raw():
 	f = open(device_file, 'r')
 	lines = f.readlines()
@@ -93,7 +100,7 @@ def read_temp_raw():
 
 def read_temp():
 	lines = read_temp_raw()
-# the following "while" re-reads lines [0] until the librtary reports YES got a good CRC
+# the following "while" re-reads lines [0] until the library reports YES got a good CRC
 	while lines[0].strip()[-3:] != 'YES':
 		time.sleep(0.2)
 		lines = read_temp_raw()
@@ -111,6 +118,46 @@ def read_nr_devices():
 	dev_count.close()
 	num_devices = int ( device_count)
 	return (num_devices)
+
+def fetch_temperatures():
+    #os.system('modprobe w1-gpio gpiopin=25')
+    os.system('modprobe w1-gpio')
+    os.system('modprobe w1-therm')
+    time.sleep(1)
+
+    nr_devices = read_nr_devices()
+
+    #os.system ('PiBits/ServoBlaster/user/./servod') # servod is run by crontab now
+    #activate servoblaster software
+
+    device_folder = glob.glob(base_dir + '28*') [0] #middle
+    device_file = device_folder + '/w1_slave'
+    r=(read_temp()[1])
+    mid_actual=r
+    mid_temp=(r)-5
+    w=device_folder[23:35]
+
+    device_folder = glob.glob(base_dir + '28*') [2] #right
+    device_file = device_folder + '/w1_slave'
+    r=(read_temp()[1])
+    right_actual=r
+    right_temp=(r)-3
+
+    y=device_folder[23:35]
+
+    device_folder = glob.glob(base_dir + '28*') [3] #mudroom
+    device_file = device_folder + '/w1_slave'
+    r=(read_temp()[1])
+    mudroom=(r)
+    z=device_folder[23:35]
+
+    device_folder = glob.glob(base_dir + '28*') [4] #left
+    device_file = device_folder + '/w1_slave'
+    r=(read_temp()[1])
+    left_actual=r
+    left_temp=(r)-1
+    za=device_folder[23:35]
+
 
 def do_ulo():
     fd_upper_left = open ("/run/shm/Upper_left_state", "w")
@@ -212,6 +259,8 @@ def do_close_all():
     do_urc()
     do_lrc()
 
+
+
 def display_web_page():
 
     # set up something to track current state of the left slot wall
@@ -278,45 +327,8 @@ def display_web_page():
     fd_lower_right.close()
 
 
-    #os.system('modprobe w1-gpio gpiopin=25')
-    os.system('modprobe w1-gpio')
-    os.system('modprobe w1-therm')
-    time.sleep(1)
-
-    nr_devices = read_nr_devices()
-
-    os.system ('PiBits/ServoBlaster/user/./servod')
-    #activate servoblaster software
-
-    device_folder = glob.glob(base_dir + '28*') [0] #middle
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    mid_actual=r
-    mid_temp=(r)-5
-    w=device_folder[23:35]
-
-    device_folder = glob.glob(base_dir + '28*') [2] #right
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    right_actual=r
-    right_temp=(r)-3
-
-    y=device_folder[23:35]
-
-    device_folder = glob.glob(base_dir + '28*') [3] #mudroom
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    mudroom=(r)
-    z=device_folder[23:35]
-
-    device_folder = glob.glob(base_dir + '28*') [4] #left
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    left_actual=r
-    left_temp=(r)-1
-    za=device_folder[23:35]
-
-
+   
+    fetch_temperatures()
 
 
     DayStamp = datetime.datetime.today().weekday()
@@ -345,7 +357,7 @@ def display_web_page():
   </tr>
 </table>
 </form>
-From pi@solwall5.py: mudroom reference={:.1f}<br>
+From pi@solwall.py: mudroom reference={:.1f}<br>
 <table width="550" border="1" cellspacing="1" cellpadding="1">
   <tr>
     <td>pi@solwall</td>
@@ -501,48 +513,6 @@ if quarterly == "yes":
     
 
 
-
-
-#os.system('modprobe w1-gpio gpiopin=25')
-os.system('modprobe w1-gpio')
-os.system('modprobe w1-therm')
-time.sleep(1)
-
-nr_devices = read_nr_devices()
-
-#os.system ('PiBits/ServoBlaster/user/./servod')
-#activate servoblaster software
-
-device_folder = glob.glob(base_dir + '28*') [0] #middle
-device_file = device_folder + '/w1_slave'
-r=(read_temp()[1])
-mid_actual=r
-mid_temp=(r)-5
-w=device_folder[23:35]
-
-device_folder = glob.glob(base_dir + '28*') [2] #right
-device_file = device_folder + '/w1_slave'
-r=(read_temp()[1])
-right_actual=r
-right_temp=(r)-3
-
-y=device_folder[23:35]
-
-device_folder = glob.glob(base_dir + '28*') [3] #mudroom
-device_file = device_folder + '/w1_slave'
-r=(read_temp()[1])
-mudroom=(r)
-z=device_folder[23:35]
-
-device_folder = glob.glob(base_dir + '28*') [4] #left
-device_file = device_folder + '/w1_slave'
-r=(read_temp()[1])
-left_actual=r
-left_temp=(r)-1
-za=device_folder[23:35]
-
-
-logging.debug('mudroom (reference) temperature: {:}'.format(r) )
 
 
 
