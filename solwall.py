@@ -14,9 +14,9 @@ import logging
 # Define some variables
 # -----------------------
 
-#logging.basicConfig(format='solwall %(levelname)s: %(asctime)s  %(message)s', level=logging.INFO)
+logging.basicConfig(format='solwall %(levelname)s: %(asctime)s  %(message)s', level=logging.DEBUG)
 # if you set level=logging.INFO it will supress all the logging.debug messages
-logging.basicConfig(format='solwall %(levelname)s: %(asctime)s  %(message)s', filename='/run/shm/toss.txt', level=logging.DEBUG)
+#logging.basicConfig(format='solwall %(levelname)s: %(asctime)s  %(message)s', filename='/run/shm/toss.txt', level=logging.DEBUG)
 
 global operating_mode
 operating_mode='auto'
@@ -30,12 +30,12 @@ Lower_left_state, Lower_mid_state, Lower_right_state
 mudroom = left_actual = mid_actual = right_actual = left_temp = mid_temp = right_temp = \
 Lower_left_state = Lower_mid_state = Lower_right_state = 0
 
-global left_slot_state
-left_slot_state="Open"
-global mid_slot_state
-mid_slot_state="Open"
-global right_slot_state
-right_slot_state="Open"
+global Upper_left_state
+Upper_left_state="Open"
+global Upper_mid_state
+Upper_mid_state="Open"
+global Upper_right_state
+Upper_right_state="Open"
 
 global upper_left_open
 global upper_left_close
@@ -123,12 +123,7 @@ def fetch_temperatures():
     #os.system('modprobe w1-gpio gpiopin=25')
     os.system('modprobe w1-gpio')
     os.system('modprobe w1-therm')
-    time.sleep(1)
-
     nr_devices = read_nr_devices()
-
-    #os.system ('PiBits/ServoBlaster/user/./servod') # servod is run by crontab now
-    #activate servoblaster software
 
     device_folder = glob.glob(base_dir + '28*') [0] #middle
     device_file = device_folder + '/w1_slave'
@@ -158,6 +153,9 @@ def fetch_temperatures():
     left_temp=(r)-1
     za=device_folder[23:35]
 
+    logging.debug("from fetch_temp before exiting: left_temp {:.1f}, mid_temp {:.1f}, right_temp {:.1f}, mudroom {:.1f}".format \
+                  (left_temp, mid_temp, right_temp, mudroom))
+    return(left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom)
 
 def do_ulo():
     fd_upper_left = open ("/run/shm/Upper_left_state", "w")
@@ -260,9 +258,7 @@ def do_close_all():
     do_lrc()
 
 
-
-def display_web_page():
-
+def get_slot_status():
     # set up something to track current state of the left slot wall
     try:
         fd_upper_left = open ("/run/shm/Upper_left_state", "r")   # first check to see if already have existing state
@@ -326,18 +322,19 @@ def display_web_page():
     Lower_right_state = fd_lower_right.read()
     fd_lower_right.close()
 
-
+    return(Upper_left_state, Lower_left_state, Upper_mid_state, Lower_mid_state, Upper_right_state, Lower_right_state)
    
-    fetch_temperatures()
 
 
+
+
+def display_web_page():
+    left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom = fetch_temperatures()
+    Upper_left_state, Lower_left_state, Upper_mid_state, Lower_mid_state, Upper_right_state, Lower_right_state = get_slot_status()
     DayStamp = datetime.datetime.today().weekday()
     WeekDay = week[DayStamp]
     TimeStamp = datetime.datetime.now().strftime("%H:%M")
-
-
     webpage = open ( '/run/shm/index.html', 'w' )
-
     webpage.write ('''
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
@@ -515,31 +512,22 @@ if quarterly == "yes":
 
 
 
-
+left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom = fetch_temperatures()
+Upper_left_state, Lower_left_state, Upper_mid_state, Lower_mid_state, Upper_right_state, Lower_right_state = get_slot_status()
 ##########
 #  left  #
 ##########
 
 if left_temp > mudroom:
 	logging.debug('left is hotter than mudroom, so opening left slots')
-	if ("Closed" in left_slot_state): # no reason to open the slot it it's already opened
-		left_slot_state = "Open"
-		if quarterly=='yes':	
-			do_ulo()
-			do_llo()
-
+	if ("Closed" in Upper_left_state): # no reason to open the slot it it's already opened	
+		do_ulo()
+		do_llo()
 else:
 	logging.debug('left is colder than mudroom, closing left slots')
-	if ("Open" in left_slot_state): # no reason to close the slot if it's already closed
-		left_slot_state = "Closed"
-		if quarterly=='yes':
-			do_ulc()
-			do_llc()
-		fd_left = open ("/run/shm/left_state", "w")
-		fd_left.write("Closed")
-		fd_left.close()
-
-
+	if ("Open" in Upper_left_state): # no reason to close the slot if it's already closed
+		do_ulc()
+		do_llc()
 
 
 
@@ -549,26 +537,14 @@ else:
 
 if mid_temp > mudroom:
 	logging.debug('middle is hatter than mudroom, so opening middle slots')	
-	if ("Closed" in mid_slot_state): # no reason to open the slot if it's already open
-		mid_slot_state = "Open"
-		if quarterly=='yes':
-			do_umo
-			do_lmo
-		fd_mid = open ("/run/shm/mid_state", "w")
-		fd_mid.write("Open")
-		fd_mid.close()
-		middle=('opened')
+	if ("Closed" in Upper_mid_state): # no reason to open the slot if it's already open
+		do_umo
+		do_lmo
 else:
 	logging.debug('middle is colder than mudroom, so closing middle slots')
-	if ("Open" in mid_slot_state): # no reason to close the slot if it's already closed
-		mid_slot_state = "Closed"
-		if quarterly=='yes':
-			do_umc()
-			do_lmc()
-		fd_mid = open ("/run/shm/mid_state", "w")
-		fd_mid.write("Closed")
-		fd_mid.close()
-		middle=('closed')
+	if ("Open" in Upper_mid_state): # no reason to close the slot if it's already closed
+		do_umc()
+		do_lmc()
 
 
 
@@ -579,26 +555,16 @@ else:
 
 if right_temp > mudroom:
 	logging.debug('right is hotter than mudroom, so opening right slotss')
-	if ("Closed" in right_slot_state): # no reason to open the slot if it's already opened
-		right_slot_state = "Open"
-		if quarterly=='yes':
-			do_uro()
-			do_lro()
-		fd_right = open ("/run/shm/right_state", "w")
-		fd_right.write("Open")
-		fd_right.close()
-		right=('open')
+	if ("Closed" in Upper_right_state): # no reason to open the slot if it's already opened
+		do_uro()
+		do_lro()
+
 else:
 	logging.debug('right is colder than mudroom, so closing right slots')
-	if ("Open" in right_slot_state): # no reason to close the slot if it's already closed
-		right_slot_state = "Closed"	
-		if quarterly=='yes':
-			do_urc()
-			do_lrc()
-		fd_right = open ("/run/shm/right_state", "w")
-		fd_right.write("Closed")
-		fd_right.close()	
-		right=('closed')
+	if ("Open" in Upper_right_state): # no reason to close the slot if it's already closed
+		do_urc()
+		do_lrc()
+
 
 	
 
