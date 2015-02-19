@@ -18,6 +18,13 @@ logging.basicConfig(format='solwall %(levelname)s: %(asctime)s  %(message)s', le
 # if you set level=logging.INFO it will supress all the logging.debug messages
 #logging.basicConfig(format='solwall %(levelname)s: %(asctime)s  %(message)s', filename='/run/shm/toss.txt', level=logging.DEBUG)
 
+os.system('modprobe w1-gpio')
+#os.system( 'sudo modprobe w1-gpio gpiopin=18' ) sets up pin 18 instead of pin 4
+os.system('modprobe w1-therm')
+base_dir = '/sys/bus/w1/devices/'
+
+global temp_c, temp_f
+
 global operating_mode
 operating_mode='auto'
 
@@ -83,14 +90,11 @@ week   = ['Mon',
           'Sun']
 
 
-base_dir = '/sys/bus/w1/devices/'
-device_folder = glob.glob(base_dir + '28*')[0]
-device_file = device_folder + '/w1_slave'
+
 
 # -----------------------
 # Define some functions
 # -----------------------
-
 
 def read_temp_raw():
 	f = open(device_file, 'r')
@@ -111,6 +115,7 @@ def read_temp():
 		temp_c = float(temp_string) / 1000.0
 		temp_f = temp_c * 9.0 / 5.0 + 32.0
 		return temp_c, temp_f
+
 #the following def goes into the system and counts the number of master/slave 1 wire devices
 def read_nr_devices():
 	dev_count = open ("/sys/bus/w1/devices/w1_bus_master1/w1_master_slave_count", 'r')
@@ -119,43 +124,18 @@ def read_nr_devices():
 	num_devices = int ( device_count)
 	return (num_devices)
 
-def fetch_temperatures():
-    #os.system('modprobe w1-gpio gpiopin=25')
-    os.system('modprobe w1-gpio')
-    os.system('modprobe w1-therm')
-    nr_devices = read_nr_devices()
+nr_devices = read_nr_devices()
 
-    device_folder = glob.glob(base_dir + '28*') [0] #middle
+for n in range (0, nr_devices):
+    TM = time.strftime( "%Y/%m/%d %H:%M %a", time.localtime(time.time()) )
+    device_folder = glob.glob(base_dir + '28*')[n]
     device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    mid_actual=r
-    mid_temp=(r)-5
-    w=device_folder[23:35]
+    print TM + " " + device_folder[23:35],
+    print " %2.1f C, or %2.1f F " % (read_temp())
+print("__END__")
 
-    device_folder = glob.glob(base_dir + '28*') [2] #right
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    right_actual=r
-    right_temp=(r)-3
 
-    y=device_folder[23:35]
 
-    device_folder = glob.glob(base_dir + '28*') [3] #mudroom
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    mudroom=(r)
-    z=device_folder[23:35]
-
-    device_folder = glob.glob(base_dir + '28*') [4] #left
-    device_file = device_folder + '/w1_slave'
-    r=(read_temp()[1])
-    left_actual=r
-    left_temp=(r)-1
-    za=device_folder[23:35]
-
-    logging.debug("from fetch_temp before exiting: left_temp {:.1f}, mid_temp {:.1f}, right_temp {:.1f}, mudroom {:.1f}".format \
-                  (left_temp, mid_temp, right_temp, mudroom))
-    return(left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom)
 
 def do_ulo():
     fd_upper_left = open ("/run/shm/Upper_left_state", "w")
@@ -329,7 +309,7 @@ def get_slot_status():
 
 
 def display_web_page():
-    left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom = fetch_temperatures()
+#    left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom = fetch_temperatures()
     Upper_left_state, Lower_left_state, Upper_mid_state, Lower_mid_state, Upper_right_state, Lower_right_state = get_slot_status()
     DayStamp = datetime.datetime.today().weekday()
     WeekDay = week[DayStamp]
@@ -401,6 +381,12 @@ From pi@solwall.py: mudroom reference={:.1f}<br>
 ##############
 # Begin MAIN #
 ##############
+os.system('modprobe w1-gpio')
+os.system('modprobe w1-therm')
+base_dir = '/sys/bus/w1/devices/'
+
+
+
 
 #print ("Number of command-line arguments: {:}".format(  len(sys.argv)  ))
 if len(sys.argv) == 2:
@@ -507,27 +493,58 @@ except IOError:
     quarterly = "no"
 if quarterly == "yes":
     os.system("shred /run/shm/run_quarterly_slot_wall -u")              # see you in 15 minutes
-    
 
 
+#fetch_temperatures():
+#0000046b78dd  scale
 
+r=(read_temp()[1])
+mid_actual=r
+mid_temp=(r)-5
+w=device_folder[23:35]
+logging.debug("0000046bf7a3  {:.2f} (mid) w=device_folder[23:35]  {:}".format(mid_actual, w))
 
-left_actual, mid_actual, right_actual, left_temp, mid_temp, right_temp, mudroom = fetch_temperatures()
+device_folder = glob.glob(base_dir + '28*') [2] #right
+device_file = device_folder + '/w1_slave'
+r=(read_temp()[1])
+right_actual=r
+right_temp=(r)-3
+y=device_folder[23:35]
+logging.debug("0000046c3092  {:.2f} (right) y=device_folder[23:35]  {:}".format(right_actual, y))
+
+device_folder = glob.glob(base_dir + '28*') [3] #mudroom
+device_file = device_folder + '/w1_slave'
+r=(read_temp()[1])
+mudroom=(r)
+z=device_folder[23:35]
+logging.debug("0000046c3baf  {:.2f} (mudroom) z=device_folder[23:35]  {:}".format(mudroom, z))
+
+device_folder = glob.glob(base_dir + '28*') [4] #left
+device_file = device_folder + '/w1_slave'
+r=(read_temp()[1])
+left_actual=r
+left_temp=(r)-1
+za=device_folder[23:35]
+logging.debug("0000046bf7a3  {:.2f}  (left) za=device_folder[23:35]  {:}".format(left_actual, za))
+
+#logging.debug("from fetch_temp before exiting: left_temp {:.1f}, mid_temp {:.1f}, right_temp {:.1f}, mudroom {:.1f}".format \
+#                  (left_temp, mid_temp, right_temp, mudroom))
+
 Upper_left_state, Lower_left_state, Upper_mid_state, Lower_mid_state, Upper_right_state, Lower_right_state = get_slot_status()
 ##########
 #  left  #
 ##########
 
 if left_temp > mudroom:
-	logging.debug('left is hotter than mudroom, so opening left slots')
-	if ("Closed" in Upper_left_state): # no reason to open the slot it it's already opened	
-		do_ulo()
-		do_llo()
+    logging.debug('left is hotter than mudroom, so opening left slots')
+    if ("Closed" in Upper_left_state): # no reason to open the slot it it's already opened	
+        do_ulo()
+        do_llo()
 else:
-	logging.debug('left is colder than mudroom, closing left slots')
-	if ("Open" in Upper_left_state): # no reason to close the slot if it's already closed
-		do_ulc()
-		do_llc()
+    logging.debug('left is colder than mudroom, closing left slots')
+    if ("Open" in Upper_left_state): # no reason to close the slot if it's already closed
+        do_ulc()
+        do_llc()
 
 
 
@@ -536,16 +553,15 @@ else:
 ############
 
 if mid_temp > mudroom:
-	logging.debug('middle is hatter than mudroom, so opening middle slots')	
-	if ("Closed" in Upper_mid_state): # no reason to open the slot if it's already open
-		do_umo
-		do_lmo
+    logging.debug("middle is hotter than mudroom, so opening middle slots")	
+    if ("Closed" in Upper_mid_state): # no reason to open the slot if it's already open
+        do_umo()
+        do_lmo()
 else:
-	logging.debug('middle is colder than mudroom, so closing middle slots')
-	if ("Open" in Upper_mid_state): # no reason to close the slot if it's already closed
-		do_umc()
-		do_lmc()
-
+    logging.debug("middle is colder than mudroom, so closing middle slots")
+    if ("Open" in Upper_mid_state): # no reason to close the slot if it's already closed
+        do_umc()
+        do_lmc()
 
 
 
@@ -554,7 +570,7 @@ else:
 ###########
 
 if right_temp > mudroom:
-	logging.debug('right is hotter than mudroom, so opening right slotss')
+	logging.debug('right is hotter than mudroom, so opening right slots')
 	if ("Closed" in Upper_right_state): # no reason to open the slot if it's already opened
 		do_uro()
 		do_lro()
