@@ -81,14 +81,7 @@ upper_right_close = 'echo ' + upper_right_servo + '=3% > /dev/servoblaster'
 lower_right_open  = 'echo ' + lower_right_servo + '=8% > /dev/servoblaster'
 lower_right_close = 'echo ' + lower_right_servo + '=77% > /dev/servoblaster'
 
-week   = ['Mon', 
-          'Tue', 
-          'Wed', 
-          'Thu',  
-          'Fri',
-          'Sat',
-          'Sun']
-
+week = ['Mon', 'Tue', 'Wed', 'Thu',  'Fri','Sat', 'Sun']
 
 
 
@@ -384,7 +377,16 @@ From pi@solwall.py: mudroom reference={:.1f}<br>
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
 base_dir = '/sys/bus/w1/devices/'
-
+operating_mode = "manual"
+try:
+    fd_operating_mode = open ("/run/shm/solwall.mode", "r")
+except IOError:
+    fd_operating_mode = open('/run/shm/solwall.mode', 'w')
+    fd_operating_mode.write("auto")
+fd_operating_mode.close()
+fd_operating_mode = open ("/run/shm/solwall.mode", "r")
+operating_mode = fd_operating_mode.read()
+fd_operating_mode.close()
 
 
 
@@ -480,12 +482,7 @@ if len(sys.argv) == 2:
         display_web_page()
         sys.exit()
 
-operating_mode = "manual"
-try:
-    fd_operating_mode = open ("/run/shm/operating_mode", "r")
-except IOError:
-    operating_mode = "auto"
-    
+
 quarterly = "yes"
 try:
     fd_quarterly = open ("/run/shm/run_quarterly_slot_wall", "r")    # see which flavor of output we need
@@ -531,6 +528,10 @@ logging.debug("0000046bf7a3  {:.2f}  (left) za=device_folder[23:35]  {:}".format
 #                  (left_temp, mid_temp, right_temp, mudroom))
 
 Upper_left_state, Lower_left_state, Upper_mid_state, Lower_mid_state, Upper_right_state, Lower_right_state = get_slot_status()
+if operating_mode == "manual":
+    display_web_page()
+    sys.exit()
+
 ##########
 #  left  #
 ##########
