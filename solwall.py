@@ -126,21 +126,6 @@ def read_nr_devices():
 	num_devices = int ( device_count)
 	return (num_devices)
 
-"""
-The following paragraph was used during construction. Pay no attention.
-nr_devices = read_nr_devices()
-for n in range (0, nr_devices):
-    TM = time.strftime( "%Y/%m/%d %H:%M %a", time.localtime(time.time()) )
-    device_folder = glob.glob(base_dir + '28*')[n]
-    device_file = device_folder + '/w1_slave'
-    print TM + " " + device_folder[23:35],
-    print " %2.1f C, or %2.1f F " % (read_temp())
-"""
-
-
-
-
-
 def do_ulo():
 	fd_upper_left = open ("/run/shm/Upper_left_state", "w")
 	fd_upper_left.write("Open")
@@ -459,7 +444,16 @@ From pi@solwall.py: mudroom reference={:.1f}<br>
 ##############
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
-base_dir = '/sys/bus/w1/devices/'
+nr_devices = read_nr_devices()
+for n in range (0, nr_devices):
+    TM = time.strftime( "%Y/%m/%d %H:%M %a", time.localtime(time.time()) )
+    device_folder = glob.glob(base_dir + '28*')[n]
+    device_file = device_folder + '/w1_slave'
+    #print TM + " " + device_folder[23:35],
+    #print " %2.1f C, or %2.1f F " % (read_temp())
+
+
+
 operating_mode = "manual"
 try:
     fd_operating_mode = open ("/run/shm/solwall.mode", "r")
