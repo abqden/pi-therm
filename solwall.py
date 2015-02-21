@@ -1,6 +1,12 @@
 #!/usr/bin/python
 # solwall.py
 
+"""
+The Python sys module provides access to any command-line arguments via the sys.argv.
+This serves two purpose: sys.argv is the list of command-line arguments. len(sys.argv)
+is the number of command-line arguments. Here sys.argv[0] is the program ie. script name.
+
+"""
 #================================================================
 # Imports
 #----------------------------------------------------------------
@@ -22,6 +28,9 @@ os.system('modprobe w1-gpio')
 #os.system( 'sudo modprobe w1-gpio gpiopin=18' ) sets up pin 18 instead of pin 4
 os.system('modprobe w1-therm')
 base_dir = '/sys/bus/w1/devices/'
+
+global repeat_until
+repeat_until = 0
 
 global temp_c, temp_f
 
@@ -117,25 +126,33 @@ def read_nr_devices():
 	num_devices = int ( device_count)
 	return (num_devices)
 
+"""
+The following paragraph was used during construction. Pay no attention.
 nr_devices = read_nr_devices()
-
 for n in range (0, nr_devices):
     TM = time.strftime( "%Y/%m/%d %H:%M %a", time.localtime(time.time()) )
     device_folder = glob.glob(base_dir + '28*')[n]
     device_file = device_folder + '/w1_slave'
     print TM + " " + device_folder[23:35],
     print " %2.1f C, or %2.1f F " % (read_temp())
-print("__END__")
+"""
+
 
 
 
 
 def do_ulo():
-    fd_upper_left = open ("/run/shm/Upper_left_state", "w")
-    fd_upper_left.write("Open")
-    fd_upper_left.close()
-    logging.debug(upper_left_open)
-    os.system (upper_left_open)
+	fd_upper_left = open ("/run/shm/Upper_left_state", "w")
+	fd_upper_left.write("Open")
+	fd_upper_left.close()
+	logging.debug(upper_left_open)
+	os.system (upper_left_open)
+	if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (upper_left_close)
+			time.sleep(5)
+			os.system (upper_left_open)
 
 def do_ulc():
     fd_upper_left = open ("/run/shm/Upper_left_state", "w")
@@ -143,6 +160,12 @@ def do_ulc():
     fd_upper_left.close()
     logging.debug(upper_left_close)
     os.system (upper_left_close)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (upper_left_open)
+			time.sleep(5)
+			os.system (upper_left_close)
 
 def do_llo():
     fd_lower_left = open ("/run/shm/Lower_left_state", "w")
@@ -150,6 +173,12 @@ def do_llo():
     fd_lower_left.close()
     logging.debug(lower_left_open)
     os.system (lower_left_open)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (lower_left_close)
+			time.sleep(5)
+			os.system (lower_left_open)
 
 def do_llc():
     fd_lower_left = open ("/run/shm/Lower_left_state", "w")
@@ -157,6 +186,12 @@ def do_llc():
     fd_lower_left.close()
     logging.debug(lower_left_close)
     os.system (lower_left_close)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (lower_left_open)
+			time.sleep(5)
+			os.system (lower_left_close)
 
 def do_umo():
     fd_upper_mid = open ("/run/shm/Upper_mid_state", "w")
@@ -164,6 +199,12 @@ def do_umo():
     fd_upper_mid.close()
     logging.debug(upper_mid_open)
     os.system (upper_mid_open)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (upper_mid_close)
+			time.sleep(5)
+			os.system (upper_mid_open)
 
 def do_umc():
     fd_upper_mid = open ("/run/shm/Upper_mid_state", "w")
@@ -171,6 +212,12 @@ def do_umc():
     fd_upper_mid.close()
     logging.debug(upper_mid_close)
     os.system (upper_mid_close)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (upper_mid_open)
+			time.sleep(5)
+			os.system (upper_mid_close)
 
 def do_lmo():
     fd_lower_mid = open ("/run/shm/Lower_mid_state", "w")
@@ -178,6 +225,12 @@ def do_lmo():
     fd_lower_mid.close()
     logging.debug(lower_mid_open)
     os.system (lower_mid_open)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (lower_mid_close)
+			time.sleep(5)
+			os.system (lower_mid_open)
 
 def do_lmc():
     fd_lower_mid = open ("/run/shm/Lower_mid_state", "w")
@@ -185,6 +238,12 @@ def do_lmc():
     fd_lower_mid.close()
     logging.debug(lower_mid_close)
     os.system (lower_mid_close)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (lower_mid_open)
+			time.sleep(5)
+			os.system (lower_mid_close)
 
 def do_uro():
     fd_upper_right = open ("/run/shm/Upper_right_state", "w")
@@ -192,6 +251,12 @@ def do_uro():
     fd_upper_right.close()
     logging.debug(upper_right_open)
     os.system (upper_right_open)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (upper_right_close)
+			time.sleep(5)
+			os.system (upper_right_open)
 
 def do_urc():
     fd_upper_right = open ("/run/shm/Upper_right_state", "w")
@@ -199,6 +264,12 @@ def do_urc():
     fd_upper_right.close()
     logging.debug(upper_right_close)
     os.system (upper_right_close)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (upper_right_open)
+			time.sleep(5)
+			os.system (upper_right_close)
 
 def do_lro():
     fd_lower_right = open ("/run/shm/Lower_right_state", "w")
@@ -206,6 +277,12 @@ def do_lro():
     fd_lower_right.close()
     logging.debug(lower_right_open)
     os.system (lower_right_open)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (lower_right_close)
+			time.sleep(5)
+			os.system (lower_right_open)
 
 def do_lrc():
     fd_lower_right = open ("/run/shm/Lower_right_state", "w")
@@ -213,6 +290,12 @@ def do_lrc():
     fd_lower_right.close()
     logging.debug(lower_right_close)
     os.system (lower_right_close)
+    if (repeat_until):
+		for n in range (0, repeat_until):
+			time.sleep(5)
+			os.system (lower_right_open)
+			time.sleep(5)
+			os.system (lower_right_close)
 
 def do_open_all():
     do_ulo()
@@ -390,8 +473,13 @@ fd_operating_mode.close()
 
 
 
-#print ("Number of command-line arguments: {:}".format(  len(sys.argv)  ))
-if len(sys.argv) == 2:
+print ("Number of command-line arguments: {:}".format(  len(sys.argv)  ))
+if len(sys.argv) == 3:
+	repeat_until = int(sys.argv[2])
+else:
+	repeat_until = 0
+
+if len(sys.argv) > 1:
     solo = sys.argv[1]
     if (solo == "-h") or (solo == "h"):
         print("""
@@ -409,6 +497,8 @@ if len(sys.argv) == 2:
         urc = upper right close
         lro = lower right open
         lrc = lower right close
+        
+        you can also type ulo 5, for example, to repeat 5 times
         """)
         sys.exit()
     if solo == "ca": #close all
